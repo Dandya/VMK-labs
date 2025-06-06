@@ -48,6 +48,19 @@ struct Labs {
 
 	std::vector<std::string> BestLinearApproximations(const std::vector<int>& stat_coeff);
 
+	// lab4.cpp
+
+	std::vector<int> CreateSpecificVecRand();
+
+	std::vector<int> CreateStatStructCoeff(const std::vector<int>& f_vec);
+
+	std::vector<std::vector<int>> CreateReg(const std::vector<int>& register_lengths);
+
+	std::vector<std::vector<int>> SearchPartKey(double p, double q,
+			int candidate_len, int number_candidate,
+			const std::vector<std::vector<int>>& Registers,
+			const std::vector<int>& register_lengths);
+
 	template<typename T>
 	void PrintVec(const std::vector<T>& vec, const std::string& desc) {
 		std::cout << desc <<": ";

@@ -19,6 +19,7 @@ int main(){
 	labs.Lab1();
 	labs.Lab2();
 	labs.Lab3();
+	labs.Lab4();
 
         // std::vector<std::vector<int>> f_vec = Lab1();
 

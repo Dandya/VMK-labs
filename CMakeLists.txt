@@ -22,7 +22,7 @@ set(SOURCES
     lab1.cpp
     lab2.cpp
     lab3.cpp
-    # Lab4.cpp
+    lab4.cpp
 )
 
 # Создаем исполняемый файл

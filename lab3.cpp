@@ -191,7 +191,7 @@ Labs::Lab3() {
 	std::cout << "\n----2. Построение спектра булевых функций для координатных функций----\n";
 	PrintSpectrum(stat_coeff);
 
-	std::cout << "----3. Нахождение наилучшего линейного приближения для координатных булеых функций----\n";
+	std::cout << "----3. Нахождение наилучшего линейного приближения для координатных булевых функций----\n";
 	for(int i = 0; i < N_NUMBER; i++){
 		std::vector<std::string> lin = BestLinearApproximations(stat_coeff[i]);
 		std::cout << "\n\nf"+std::to_string(i+1)+":";
