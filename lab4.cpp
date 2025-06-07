@@ -381,7 +381,7 @@ Labs::Lab4() {
 
 	std::vector<int> register_lengths = {5, 7, 9, 11, 13, 19};
 	int reg_size = (int)register_lengths.size();
-	if (reg_size != N_NUMBER) {
+	if (reg_size != N_NUMBER) {	
 		std::cout << "Ошибка в размерности. Корректный запуск программы невозможен" << "\n";
 		return;
 	}
@@ -402,7 +402,7 @@ Labs::Lab4() {
 
 	for (int i = 0; i < reg_size; i++) {
 		if (Stat_Struct_Coeff[(0b1 << (reg_size - 1 - i))] > 0) {
-			Q_f_no_equals_y[i] = 0.5 + (double)abs(Stat_Struct_Coeff[(0b1 << (reg_size - 1 - i))]) / pow(2, reg_size);
+			Q_f_no_equals_y[i] = 0.5 + (double)fabs(Stat_Struct_Coeff[(0b1 << (reg_size - 1 - i))]) / pow(2, reg_size);
 		}
 		else {
 			Q_f_no_equals_y[i] = 1.0 - P_f_no_equals_xn[i];
