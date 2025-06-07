@@ -241,7 +241,6 @@ CreateGamma(int gamma_size, int reg_size, const std::vector<std::vector<int>>& R
 	return gamma;
 }
 
-// Поиск кандидатов в регистры с учетом вероятностей p, q
 std::vector<std::vector<int>>
 Labs::SearchPartKey(double p, double q, int candidate_len, int number_candidate, const std::vector<std::vector<int>>& Registers, const std::vector<int>& register_lengths) {
 	Standard_Normal_Distribution_Table SNDT = Standard_Normal_Distribution_Table();
@@ -249,9 +248,9 @@ Labs::SearchPartKey(double p, double q, int candidate_len, int number_candidate,
 	double T = 0.0, C = 0.0;
 	double Qantil_n_alpha = 0.0, Qantil_n_beta = 0.0;
 
-	std::cout << "\n\tПодбираем кандидатов в регистр " << number_candidate << "\n";
+	std::cout << "Подбираем кандидатов в регистр " << number_candidate <<
+			" с длиной " << register_lengths[number_candidate-1] <<"\n";
 
-	// Подбор порогов alpha, beta
 	do {
 			alpha += 0.0000001;
 			beta += 0.0000001;
@@ -260,47 +259,38 @@ Labs::SearchPartKey(double p, double q, int candidate_len, int number_candidate,
 			T = pow((Qantil_n_alpha * sqrt(p * (1 - p)) + Qantil_n_beta * sqrt(q * (1 - q))), 2) / pow(q - p, 2);
 	} while (Qantil_n_alpha == ERROR_CODE || Qantil_n_beta == ERROR_CODE);
 
-	std::cout << "\tT = " << T << "\n";
+	std::cout << "T = " << T << "\n";
 	double min_C = p < q ? T * p : T * q;
 	double max_C = p > q ? T * p : T * q;
 	C = Qantil_n_alpha * sqrt(T * p * (1 - p)) + T * p;
-	if (C < min_C || C > max_C) {
-			// C = (-Qantil_n_beta) * sqrt(T * p * (1 - q)) + T * q; // при необходимости
-	}
-	std::cout << "\tC = " << C << "\n";
+	std::cout << "C = " << C << "\n";
 
-	std::vector<std::vector<int>> result; // найденные кандидаты
-	std::vector<int> mismatches_vec; // число несовпадений для каждого найденного кандидата
+	std::vector<std::vector<int>> result;
+	std::vector<int> mismatches_vec;
 
 	int max_candidate = (int)pow(2, candidate_len);
 	int reg_size = (int)register_lengths.size();
 
-	// Генерация гаммы один раз (последняя длина регистров — передаётся в функцию)
 	std::vector<int> gamma = CreateGamma((int)T, reg_size, Registers, register_lengths);
 
 	int positive_count = 0;
-	int min_mismatches = (int)T; // инициализируем максимально возможным
-	// Параллельный цикл по всем потенциальным базовым значениям регистра
+	int min_mismatches = (int)T;
 	#pragma omp parallel
 	{
-			std::vector<int> buf_res_local;            // локальный буфер для буферизации кандидата
+			std::vector<int> buf_res_local;
 			std::vector<int> buf_candidate_local(candidate_len);
 			for (int i = 1; i < max_candidate; i++) {
-					// Разделение по потокам: каждый поток обрабатывает свой диапазон i
 					int thread_id = omp_get_thread_num();
 					int num_threads = omp_get_num_threads();
 					if (i % num_threads != thread_id) continue;
 
-					// Инициализируем начальный вектор длины candidate_len
 					buf_res_local = GetBitsVec(i, candidate_len);
 
-					// Достраиваем до длины T
 					for (int j = candidate_len; j < (int)T; j++) {
 							copy_n(buf_res_local.end() - candidate_len, candidate_len, buf_candidate_local.begin());
 							buf_res_local.push_back(FuncReg(buf_candidate_local, candidate_len));
 					}
 
-					// Считаем несовпадения с гаммой
 					int mismatches = 0;
 					for (int j = 0; j < (int)T; j++) {
 							if (gamma[j] != buf_res_local[j]) {
@@ -310,10 +300,8 @@ Labs::SearchPartKey(double p, double q, int candidate_len, int number_candidate,
 					}
 
 					if (mismatches < C) {
-							// Кандидат найден, сохраняем его (в критической секции)
 							#pragma omp critical
 							{
-									// Сохраняем только базовую часть (первые candidate_len бит)
 									std::vector<int> base_candidate(candidate_len);
 									for (int k = 0; k < candidate_len; k++) {
 											base_candidate[k] = buf_res_local[k];
@@ -327,31 +315,29 @@ Labs::SearchPartKey(double p, double q, int candidate_len, int number_candidate,
 	}
 
 	if (positive_count > 0) {
-			// Определяем индекс кандидата с минимальным количеством несовпадений
 			int min_idx = 0;
 			for (int i = 1; i < positive_count; i++) {
 					if (mismatches_vec[i] < mismatches_vec[min_idx]) {
 							min_idx = i;
 					}
 			}
-			// Выводим всех кандидатов, помечая минимальный
 			for (int i = 0; i < positive_count; i++) {
-					std::string label = "\n\t\tcandidate " + std::to_string(i + 1);
+					std::string label = "кандидат " + std::to_string(i + 1);
 					if (i == min_idx) {
-							label += " (min mismatches)";
+							label += " (минимум расхождений)";
 					}
 					PrintVec(result[i], label);
 			}
-			std::cout << "\n\tУспешно!" << "\n";
+			std::cout << "Успешно!" << "\n";
 	}
 	else {
-			std::cout << "\n\tНе удалось найти кандидатов! Перезапустите программу, пожалуйста!" << "\n";
+			std::cout << "Не удалось найти кандидатов! Перезапустите программу, пожалуйста!" << "\n";
 	}
 
 	return result;
 }
 
-// Функция отсеивания ложных кандидатов путём непосредственной проверки
+
 std::vector<std::vector<int>>
 SearchTrueKey(int count, std::vector<std::vector<int>> keys, const std::vector<std::vector<std::vector<int>>>& supposed_parts_key, std::vector<int> vec_numb, int reg_size, const std::vector<int>& register_lengths) {
 	if (count == reg_size) {
@@ -370,10 +356,10 @@ SearchTrueKey(int count, std::vector<std::vector<int>> keys, const std::vector<s
 	return keys;
 }
 
-// main-функция лабораторной работы 4
 void
 Labs::Lab4() {
-	// Генерируем не корреляционно-иммунную функцию
+	std::cout << "----Лабораторная работа 4----\n";
+	std::cout << "----1. Задание комбинированного генератора----\n";
 	func_f_non_corr_immun = CreateSpecificVecRand();
 
 	std::vector<int> Stat_Struct_Coeff = CreateStatStructCoeff(func_f_non_corr_immun);
@@ -385,18 +371,17 @@ Labs::Lab4() {
 		std::cout << "Ошибка в размерности. Корректный запуск программы невозможен" << "\n";
 		return;
 	}
-
-	printf("\n");
+	
 	const std::vector<std::vector<int>> Registers = CreateReg(register_lengths);
 	for (int i = 0; i < reg_size; i++) {
 		PrintVec(Registers[i], "Регистр " + std::to_string(i + 1));
 	}
 
 	std::vector<int> key = CreateTrueKey(Registers, register_lengths);
-	PrintVec(key, "\nИстинный ключ");
-	printf("\n");
+	PrintVec(key, "Истинный ключ");
 
-	// p — частота НЕ совпадений в таблице истинности, q — частота совпадений y и f
+	std::cout << "----2. Определение параметров нормального распределения----\n";
+
 	std::vector<double> P_f_no_equals_xn = TruthTableF(reg_size);
 	std::vector<double> Q_f_no_equals_y(reg_size);
 
@@ -407,9 +392,10 @@ Labs::Lab4() {
 		else {
 			Q_f_no_equals_y[i] = 1.0 - P_f_no_equals_xn[i];
 		}
-		printf("q%d = %lf\tp%d = %lf\n", i + 1, Q_f_no_equals_y[i], i + 1, P_f_no_equals_xn[i]);
+		printf("q%d = %lf\n", i + 1, Q_f_no_equals_y[i]);
 	}
 
+	std::cout << "----3. Подбор значений регистров----\n";
 	std::vector<std::vector<std::vector<int>>> supposed_parts_key(reg_size);
 	for (int i = 0; i < reg_size; i++) {
 		supposed_parts_key[i] = SearchPartKey(1.0 - Q_f_no_equals_y[i], 0.5, register_lengths[i], i + 1, Registers, register_lengths);
@@ -419,6 +405,7 @@ Labs::Lab4() {
 		}
 	}
 
+	std::cout << "----4. Поиск исходного ключа----\n";
 	std::vector<std::vector<int>> keys;
 	keys = SearchTrueKey(0, keys, supposed_parts_key, std::vector<int>(reg_size), reg_size, register_lengths);
 

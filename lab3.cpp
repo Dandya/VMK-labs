@@ -194,7 +194,7 @@ Labs::Lab3() {
 	std::cout << "----3. Нахождение наилучшего линейного приближения для координатных булевых функций----\n";
 	for(int i = 0; i < N_NUMBER; i++){
 		std::vector<std::string> lin = BestLinearApproximations(stat_coeff[i]);
-		std::cout << "\n\nf"+std::to_string(i+1)+":";
+		std::cout << "f"+std::to_string(i+1)+":";
 		for(int j = 0; j < lin.size(); j++)
 				std::cout << "\tg_"+std::to_string(j+1)+"(x) = " << lin[j] << "\n";
 	}
